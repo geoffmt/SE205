@@ -72,14 +72,14 @@ void * sem_protected_buffer_remove(protected_buffer_t * b){
   int    rc = -1;
 
   // Enforce synchronisation semantics using semaphores.
-  rc = sem_wait(&(b->semFull));
+  rc = sem_trywait(&(b->semFull));
   if (rc != 0) {
     print_task_activity ("remove", d);
     return d;
   }
 
   // Enter mutual exclusion.
-  sem_wait(&(b->sem_mutex));
+  sem_trywait(&(b->sem_mutex));
   d = circular_buffer_get(b->buffer);
   print_task_activity ("remove", d);
 
@@ -96,14 +96,14 @@ int sem_protected_buffer_add(protected_buffer_t * b, void * d){
   int rc = -1;
 
   // Enforce synchronisation semantics using semaphores.
-  rc = sem_wait(&(b->semEmpty));
+  rc = sem_trywait(&(b->semEmpty));
   if (rc != 0) {
     print_task_activity ("add", NULL);
     return 0;
   }
 
   // Enter mutual exclusion.
-  sem_wait(&(b->sem_mutex));
+  sem_trywait(&(b->sem_mutex));
   circular_buffer_put(b->buffer, d);
   print_task_activity ("add", d);
 
@@ -123,20 +123,21 @@ void * sem_protected_buffer_poll(protected_buffer_t * b, struct timespec *abstim
   int    rc = -1;
 
   // Enforce synchronisation semantics using semaphores.
-
+  rc = sem_timedwait(&(b->semFull),abstime);
   if (rc != 0) {
     print_task_activity ("poll", d);
     return d;
   }
 
   // Enter mutual exclusion.
-
+  sem_wait(&(b->sem_mutex));
   d = circular_buffer_get(b->buffer);
   print_task_activity ("poll", d);
 
   // Leave mutual exclusion.
-
+  sem_post(&(b->sem_mutex));
   // Enforce synchronisation semantics using semaphores.
+  sem_post(&(b->semEmpty));
   return d;
 }
 
@@ -148,7 +149,7 @@ int sem_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec
   int rc = -1;
 
   // Enforce synchronisation semantics using semaphores.
-
+  rc = sem_timedwait(&(b->semEmpty),abstime);
   if (rc != 0) {
     d = NULL;
     print_task_activity ("offer", d);
@@ -156,12 +157,13 @@ int sem_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec
   }
 
   // Enter mutual exclusion.
-
+  sem_wait(&(b->sem_mutex));
   circular_buffer_put(b->buffer, d);
   print_task_activity ("offer", d);
 
   // Leave mutual exclusion.
-
+  sem_post(&(b->sem_mutex));
   // Enforce synchronisation semantics using semaphores.
+  sem_post(&(b->semFull));
   return 1;
 }
