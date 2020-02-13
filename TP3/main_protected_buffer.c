@@ -125,10 +125,14 @@ int main(int argc, char *argv[]){
   // as parametre of the main procedure (main_consumer or main_producer).
   tasks=malloc(sizeof *tasks*(n_consumers+n_producers));
   for (i=0; i<n_consumers; i++) {
-    pthread_create(tasks+i,NULL,main_consumer,(void*)&i);
+    data = malloc(sizeof(int));
+    *data = i;
+    pthread_create(tasks+i,NULL,main_consumer,data);
   }
   for (i=n_consumers; i<n_producers+n_consumers; i++) {
-    pthread_create(tasks+i,NULL,main_producer,(void*)&i);
+    data = malloc(sizeof(int));
+    *data = i;
+    pthread_create(tasks+i,NULL,main_producer,data);
   }
 
   // Wait for producers and consumers termination
