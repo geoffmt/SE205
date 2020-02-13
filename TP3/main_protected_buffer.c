@@ -122,7 +122,7 @@ int main(int argc, char *argv[]){
   set_start_time();
 
   // Create consumers and then producers. Pass the *value* of i
-  // as parametre of the main procedure (main_consumer or main_producer).
+  // as parametre of the main procedure s(main_consumer or main_producer).
   tasks=malloc(sizeof *tasks*(n_consumers+n_producers));
   for (i=0; i<n_consumers; i++) {
     data = malloc(sizeof(int));

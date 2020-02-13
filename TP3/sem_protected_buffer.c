@@ -12,7 +12,7 @@
 #define EMPTY_SLOTS_NAME "/empty_slots"
 #define FULL_SLOTS_NAME "/full_slots"
 
-// Initialise the protected buffer structure above. 
+// Initialise the protected buffer structure above.
 protected_buffer_t * sem_protected_buffer_init(int length) {
   protected_buffer_t * b;
   b = (protected_buffer_t *)malloc(sizeof(protected_buffer_t));
@@ -21,6 +21,11 @@ protected_buffer_t * sem_protected_buffer_init(int length) {
   // Use these filenames as named semaphores
   sem_unlink (EMPTY_SLOTS_NAME);
   sem_unlink (FULL_SLOTS_NAME);
+
+  sem_init(&(b->sem_mutex),0,1);
+  sem_init(&(b->semFull),0,0);
+  sem_init(&(b->semEmpty),0,length);
+
   return b;
 }
 
@@ -28,18 +33,18 @@ protected_buffer_t * sem_protected_buffer_init(int length) {
 // not possible immedidately, the method call blocks until it is.
 void * sem_protected_buffer_get(protected_buffer_t * b){
   void * d;
-  
-  // Enforce synchronisation semantics using semaphores.
 
+  // Enforce synchronisation semantics using semaphores.
+  sem_wait(&(b->semFull));
   // Enter mutual exclusion.
-  
+  sem_wait(&(b->sem_mutex));
   d = circular_buffer_get(b->buffer);
   print_task_activity ("get", d);
 
   // Leave mutual exclusion.
-
+  sem_post(&(b->sem_mutex));
   // Enforce synchronisation semantics using semaphores.
-  
+  sem_post(&(b->semEmpty));
   return d;
 }
 
@@ -48,15 +53,16 @@ void * sem_protected_buffer_get(protected_buffer_t * b){
 void sem_protected_buffer_put(protected_buffer_t * b, void * d){
 
   // Enforce synchronisation semantics using semaphores.
-
+  sem_wait(&(b->semEmpty));
   // Enter mutual exclusion.
-  
+  sem_wait(&(b->sem_mutex));
   circular_buffer_put(b->buffer, d);
   print_task_activity ("put", d);
 
   // Leave mutual exclusion.
-
+  sem_post(&(b->sem_mutex));
   // Enforce synchronisation semantics using semaphores.
+  sem_post(&(b->semFull));
 }
 
 // Extract an element from buffer. If the attempted operation is not
@@ -64,7 +70,7 @@ void sem_protected_buffer_put(protected_buffer_t * b, void * d){
 void * sem_protected_buffer_remove(protected_buffer_t * b){
   void * d = NULL;
   int    rc = -1;
-  
+
   // Enforce synchronisation semantics using semaphores.
 
   if (rc != 0) {
@@ -73,14 +79,14 @@ void * sem_protected_buffer_remove(protected_buffer_t * b){
   }
 
   // Enter mutual exclusion.
-  
+
   d = circular_buffer_get(b->buffer);
   print_task_activity ("remove", d);
 
   // Leave mutual exclusion.
 
   // Enforce synchronisation semantics using semaphores.
-  
+
   return d;
 }
 
@@ -88,19 +94,19 @@ void * sem_protected_buffer_remove(protected_buffer_t * b){
 // not possible immedidately, return 0. Otherwise, return 1.
 int sem_protected_buffer_add(protected_buffer_t * b, void * d){
   int rc = -1;
-  
+
   // Enforce synchronisation semantics using semaphores.
-  
+
   if (rc != 0) {
     print_task_activity ("add", NULL);
     return 0;
   }
 
   // Enter mutual exclusion.
-  
+
   circular_buffer_put(b->buffer, d);
   print_task_activity ("add", d);
-  
+
   // Leave mutual exclusion.
 
   // Enforce synchronisation semantics using semaphores.
@@ -114,7 +120,7 @@ int sem_protected_buffer_add(protected_buffer_t * b, void * d){
 void * sem_protected_buffer_poll(protected_buffer_t * b, struct timespec *abstime){
   void * d = NULL;
   int    rc = -1;
-  
+
   // Enforce synchronisation semantics using semaphores.
 
   if (rc != 0) {
@@ -122,8 +128,8 @@ void * sem_protected_buffer_poll(protected_buffer_t * b, struct timespec *abstim
     return d;
   }
 
-  // Enter mutual exclusion. 
-  
+  // Enter mutual exclusion.
+
   d = circular_buffer_get(b->buffer);
   print_task_activity ("poll", d);
 
@@ -139,9 +145,9 @@ void * sem_protected_buffer_poll(protected_buffer_t * b, struct timespec *abstim
 // successful. Otherwise, return 1.
 int sem_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec * abstime){
   int rc = -1;
-  
+
   // Enforce synchronisation semantics using semaphores.
-  
+
   if (rc != 0) {
     d = NULL;
     print_task_activity ("offer", d);
@@ -149,7 +155,7 @@ int sem_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec
   }
 
   // Enter mutual exclusion.
-  
+
   circular_buffer_put(b->buffer, d);
   print_task_activity ("offer", d);
 
@@ -158,4 +164,3 @@ int sem_protected_buffer_offer(protected_buffer_t * b, void * d, struct timespec
   // Enforce synchronisation semantics using semaphores.
   return 1;
 }
-
