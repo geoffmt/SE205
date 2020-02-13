@@ -72,21 +72,21 @@ void * sem_protected_buffer_remove(protected_buffer_t * b){
   int    rc = -1;
 
   // Enforce synchronisation semantics using semaphores.
-
+  rc = sem_wait(&(b->semFull));
   if (rc != 0) {
     print_task_activity ("remove", d);
     return d;
   }
 
   // Enter mutual exclusion.
-
+  sem_wait(&(b->sem_mutex));
   d = circular_buffer_get(b->buffer);
   print_task_activity ("remove", d);
 
   // Leave mutual exclusion.
-
+  sem_post(&(b->sem_mutex));
   // Enforce synchronisation semantics using semaphores.
-
+  sem_post(&(b->semEmpty));
   return d;
 }
 
@@ -96,20 +96,21 @@ int sem_protected_buffer_add(protected_buffer_t * b, void * d){
   int rc = -1;
 
   // Enforce synchronisation semantics using semaphores.
-
+  rc = sem_wait(&(b->semEmpty));
   if (rc != 0) {
     print_task_activity ("add", NULL);
     return 0;
   }
 
   // Enter mutual exclusion.
-
+  sem_wait(&(b->sem_mutex));
   circular_buffer_put(b->buffer, d);
   print_task_activity ("add", d);
 
   // Leave mutual exclusion.
-
+  sem_post(&(b->sem_mutex));
   // Enforce synchronisation semantics using semaphores.
+  sem_post(&(b->semFull));
   return 1;
 }
 
