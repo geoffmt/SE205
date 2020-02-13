@@ -45,7 +45,7 @@ void * cond_protected_buffer_get(protected_buffer_t * b){
 // not possible immedidately, the method call blocks until it is.
 void cond_protected_buffer_put(protected_buffer_t * b, void * d){
 
-  // Enter mutual exclusion
+  // Enter mutual exclusionss
   pthread_mutex_lock(&(b->mutex));
   // Wait until there is an empty slot to put data in the unprotected
   // circular buffer (circular_buffer_put).
@@ -61,6 +61,7 @@ void cond_protected_buffer_put(protected_buffer_t * b, void * d){
 
   // Leave mutual exclusion
   pthread_mutex_unlock(&(b->mutex));
+
 }
 
 // Extract an element from buffer. If the attempted operation is not
@@ -68,13 +69,18 @@ void cond_protected_buffer_put(protected_buffer_t * b, void * d){
 void * cond_protected_buffer_remove(protected_buffer_t * b){
   void * d;
 
+  pthread_mutex_lock(&(b->mutex));
+  d = circular_buffer_get(b->buffer);
+  if (d != NULL) {
+    pthread_cond_broadcast(&(b->condEmpty));
+  }
 
   // Signal or broadcast that an empty slot is available in the
   // unprotected circular buffer (if needed)
 
-  d = circular_buffer_get(b->buffer);
   print_task_activity ("remove", d);
 
+  pthread_mutex_unlock(&(b->mutex));
   return d;
 }
 
@@ -84,14 +90,18 @@ int cond_protected_buffer_add(protected_buffer_t * b, void * d){
   int done;
 
   // Enter mutual exclusion
-
+  pthread_mutex_lock(&(b->mutex));
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
-
   done = circular_buffer_put(b->buffer, d);
+
   if (!done) d = NULL;
+
+  pthread_cond_broadcast(&(b->condFull));
+
   print_task_activity ("add", d);
 
+  pthread_mutex_unlock(&(b->mutex));
   // Leave mutual exclusion
   return done;
 }
