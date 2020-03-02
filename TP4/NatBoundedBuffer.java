@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 class NatBoundedBuffer extends BoundedBuffer {
 
-    // Initialise the protected buffer structure above. 
+    // Initialise the protected buffer structure above.
     NatBoundedBuffer (int maxSize) {
         super(maxSize);
     }
@@ -13,17 +13,22 @@ class NatBoundedBuffer extends BoundedBuffer {
     // not possible immediately, the method call blocks until it is.
     Object get() {
         Object value;
-
+        int slots;
         // Enter mutual exclusion
-            
+        synchronized(this){
             // Wait until there is a full slot available.
+            while(slots <= 0){
+              try {
+                wait();
+                value = super.get();
+                notifyAll();
+              } catch(Exception e){}}
+              slots--;
 
             // Signal or broadcast that an empty slot is available (if needed)
 
-            value = super.get();
 
-            // Leave mutual exclusion and enforce synchronisation semantics
-            // using semaphores.
+          }
         return value;
     }
 
@@ -31,15 +36,19 @@ class NatBoundedBuffer extends BoundedBuffer {
     // not possible immedidately, the method call blocks until it is.
     boolean put(Object value) {
         // Enter mutual exclusion
-            
+        synchronized(this){
             // Wait until there is a empty slot available.
-
+            while(slots <= 0){
+              try {
+                wait();
+              } catch(Exception e){}}
+              slots--;
+            }
             // Signal or broadcast that a full slot is available (if needed)
 
             super.put(value);
 
-            // Leave mutual exclusion and enforce synchronisation semantics
-            // using semaphores.
+          }
         return true;
     }
 
@@ -49,7 +58,7 @@ class NatBoundedBuffer extends BoundedBuffer {
         Object value = null;
 
         // Enter mutual exclusion
-            
+
             // Signal or broadcast that an empty slot is available (if needed)
 
             value=super.get();
@@ -64,7 +73,7 @@ class NatBoundedBuffer extends BoundedBuffer {
         boolean done;
 
         // Enter mutual exclusion
-            
+
             // Signal or broadcast that a full slot is available (if needed)
 
             done=super.put(value);
@@ -88,14 +97,14 @@ class NatBoundedBuffer extends BoundedBuffer {
 
             // Wait until a full slot is available but wait
             // no longer than the given deadline
-    
+
             if (!done) return null;
 
             // Signal or broadcast that an full slot is available (if needed)
 
             value = super.get();
 
-            // Leave mutual exclusion 
+            // Leave mutual exclusion
         return value;
     }
 
@@ -113,7 +122,7 @@ class NatBoundedBuffer extends BoundedBuffer {
 
             // Wait until a empty slot is available but wait
             // no longer than the given deadline
-    
+
             if (!done) return false;
 
             // Signal or broadcast that an empty slot is available (if needed)
