@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#define SIZE 10
+#define SIZE 2000
 
 // A shared array of unsigned integers (non-atomic, no memory model specified)
 static unsigned int x[SIZE] = {0,};
