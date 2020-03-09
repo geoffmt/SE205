@@ -14,7 +14,7 @@ future_t ** futures;
 void * main_job (void * arg) {
   job_t * job = (job_t *) arg;
   struct timespec ts1, ts2;
-  
+
   ts1.tv_sec  = job->exec_time / 1000;
   ts1.tv_nsec = (job->exec_time % 1000) * 1000000;
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     void * result;
     for (i = 0; i < job_table_size; i++) {
       if (futures[i] != NULL) {
-        
+
         // Get result from future associated to callable. Suspend until
         // result becomes available.
         result = get_callable_result (futures[i]);
@@ -92,5 +92,3 @@ int main(int argc, char *argv[]) {
   sleep (10);
   executor_shutdown(executor);
 }
-
-
