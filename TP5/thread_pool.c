@@ -38,7 +38,7 @@ int pool_thread_create (thread_pool_t * thread_pool,
   }
 
   // Do not protect the structure against concurrent accesses anymore
-  pthread_mutex_unlock(&(thread_pool->pool_mutex))
+  pthread_mutex_unlock(&(thread_pool->pool_mutex));
   if (done)
     printf("%06ld [pool_thread] created\n", relative_clock());
   return done;
