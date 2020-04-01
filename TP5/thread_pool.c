@@ -28,7 +28,7 @@ int pool_thread_create (thread_pool_t * thread_pool,
   pthread_t thread;
 
   // Protect structure against concurrent accesses
-  pthread_mutex_lock(&(thread_pool->pool_mutex))
+  pthread_mutex_lock(&(thread_pool->pool_mutex));
 
   // Always create a thread as long as there are less then
   // core_pool_size threads created.
