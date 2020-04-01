@@ -13,6 +13,7 @@ thread_pool_t * thread_pool_init(int core_pool_size, int max_pool_size) {
   thread_pool->core_pool_size = core_pool_size;
   thread_pool->max_pool_size  = max_pool_size;
   thread_pool->size           = 0;
+  pthread_mutex_init(&(thread_pool->pool_mutex),NULL);
   return thread_pool;
 }
 
