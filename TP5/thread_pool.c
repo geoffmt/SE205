@@ -68,8 +68,8 @@ int pool_thread_remove (thread_pool_t * thread_pool) {
   if (thread_pool->shutdown)
     thread_pool->size--;
 
-  if (thread_pool->size == 0)
-    pthread_cond_broadcast(&(thread_pool->pool_cond)) ;
+  if (thread_pool->size==0)
+    pthread_cond_broadcast(&(thread_pool->pool_cond));
 
   pthread_mutex_unlock(&(thread_pool->pool_mutex));
 
@@ -81,6 +81,14 @@ int pool_thread_remove (thread_pool_t * thread_pool) {
 // Wait until thread number equals zero. Protect the thread pool
 // structure against concurrent accesses.
 void wait_thread_pool_empty (thread_pool_t * thread_pool) {
+  
+  pthread_mutex_lock(&(thread_pool->pool_mutex));
+
+  while(thread_pool->size != 0)
+    pthread_cond_wait(&(thread_pool->pool_cond), &(thread_pool->pool_mutex));
+
+  pthread_mutex_unlock(&(thread_pool->pool_mutex));
+
 }  
 
 int get_shutdown(thread_pool_t * thread_pool) {

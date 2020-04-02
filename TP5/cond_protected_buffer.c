@@ -120,15 +120,27 @@ void * cond_protected_buffer_poll(protected_buffer_t * b, struct timespec *absti
   // circular buffer (circular_buffer_put) but waits no longer than
   // the given timeout.
 
+  /*
   while ((d = circular_buffer_get(b->buffer)) == NULL){
     rc = pthread_cond_timedwait(&(b->condEmpty), &(b->mutex),abstime);
-    if (rc == ETIMEDOUT)break;
+    if (rc == ETIMEDOUT) break;
   }
+  */
+
+  // We are putting NULL in the buffer during shutdown so this is 
+  // increasing the time of shutdown
+  
+  while(b->buffer->size == 0 ){
+    d=circular_buffer_get(b->buffer);
+    rc = pthread_cond_timedwait(&(b->condFull), &(b->mutex),abstime) ;
+    if (rc == ETIMEDOUT) break ;
+  }
+
   // Signal or broadcast that a full slot is available in the
   // unprotected circular buffer (if needed)
-  if (rc != ETIMEDOUT) {
+  if((d = circular_buffer_get(b->buffer)) != NULL) 
     pthread_cond_broadcast(&(b->condEmpty));
-  }
+
   print_task_activity ("poll", d);
 
   // Leave mutual exclusion
