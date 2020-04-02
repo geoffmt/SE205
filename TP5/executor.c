@@ -56,14 +56,13 @@ future_t * submit_callable (executor_t * executor, callable_t * callable) {
   // push the current one.
   future_t * first = protected_buffer_remove(executor->futures);
   if (first != NULL) {
-    protected_buffer_add(executor->futures, future);
-    future = first;
+    protected_buffer_add(executor->futures, future); // we add the curent callable
+    future = first; // attribute popped collable to current thread
   }
 
   // Try to create a thread, but allow to exceed core_pool_size (last
   // parameter set to true).
-  if (pool_thread_create (executor->thread_pool, main_pool_thread, future, 1))
-    return NULL;
+  pool_thread_create (executor->thread_pool, main_pool_thread, future, 1);
 
   return future;
 }
